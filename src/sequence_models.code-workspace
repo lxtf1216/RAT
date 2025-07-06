@@ -1,0 +1,47 @@
+{
+	"folders": [
+		{
+			"name": "sequence_models",
+			"path": ".."
+		},
+		{
+			"name": "sequence_models_eff",
+			"path": "../../sequence_models_eff"
+		},
+		{
+			"name": "sequence_models_fig",
+			"path": "../../sequence_models_fig"
+		},
+		{
+			"name": "StructuredFFN",
+			"path": "../../../StructuredFFN"
+		},
+		{
+			"name": "lm-evaluation-harness-new",
+			"path": "../../../lm-evaluation-harness-new"
+		},
+		{
+			"name": "mamba",
+			"path": "../../mamba"
+		},
+		{
+			"name": "mad-lab",
+			"path": "../../mad-lab"
+		},
+		{
+			"path": "../../../LongBench"
+		},
+		{
+			"path": "../../../LongBench_original"
+		},
+		{
+			"path": "../../../RULER"
+		},
+		{
+			"path": "../../../rat_neurips25"
+		}
+	],
+	"settings": {
+		"flake8.args": ["--max-line-width=120"]
+	}
+}
