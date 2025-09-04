@@ -73,6 +73,11 @@ class Trainer:
         self.build_optimizers()
         # load checkpoint and consider ddp
         self.resume_kwargs = self.load_checkpoint()
+        
+        # Verify model consistency across processes before DDP initialization
+        if self.gpu_id != -1:
+            self.verify_model_consistency()
+            
         if self.gpu_id != -1:
             self.task_wrapper = torch.nn.parallel.DistributedDataParallel(
                 self.task, device_ids=[self.local_rank], output_device=self.local_rank,
@@ -210,6 +215,30 @@ class Trainer:
             self.step = ckpt["step"]
             return ckpt["resume_kwargs"]
         return {}
+
+    def verify_model_consistency(self):
+        """Verify that all processes have the same model structure before DDP initialization."""
+        param_count = sum(p.numel() for p in self.task.parameters())
+        print(f"Rank {self.gpu_id}: Model has {param_count} parameters")
+        
+        if self.gpu_id != -1:
+            # Collect all processes' parameter counts
+            param_tensor = torch.tensor(param_count, device=self.device, dtype=torch.long)
+            all_params = [torch.zeros_like(param_tensor) for _ in range(self.ngpus)]
+            dist.all_gather(all_params, param_tensor)
+            
+            # Check consistency
+            all_param_counts = [t.item() for t in all_params]
+            if not all(count == param_count for count in all_param_counts):
+                error_msg = f"Model parameter mismatch across ranks: {dict(zip(range(self.ngpus), all_param_counts))}"
+                print(f"ERROR: {error_msg}")
+                raise RuntimeError(error_msg)
+            
+            if self.gpu_id == 0:
+                print(f"Model consistency verified: all ranks have {param_count} parameters")
+            
+            # Additional barrier to ensure all processes complete verification
+            dist.barrier()
 
     def forward(self,):
         pass
