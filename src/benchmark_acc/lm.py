@@ -19,29 +19,8 @@ import src.task
 import src.optim
 import src.data  # to load all the things into registries
 
-# Verify that all required components are properly registered
-def verify_registries():
-    from src.utils.registry import task_registry, backbone_registry, head_registry, embedding_registry
-    
-    required_components = {
-        'task_registry': ['lm'],
-        'backbone_registry': ['sequence'],
-        'head_registry': ['lm'],
-        'embedding_registry': ['lm']
-    }
-    
-    for registry_name, required_keys in required_components.items():
-        registry = eval(registry_name)
-        for key in required_keys:
-            if key not in registry:
-                raise RuntimeError(f"Missing {key} in {registry_name}. Available keys: {list(registry.keys())}")
-    
-    gpu_id = int(os.getenv("RANK", -1))
-    if gpu_id in [-1, 0]:
-        print("All required components verified in registries")
-
-# Verify registries after imports
-verify_registries()
+# for registry in registries:
+#    registry._is_register = False
 
 
 @hydra.main(
@@ -52,13 +31,6 @@ verify_registries()
 def main(config):
     print(config)
     gpu_id = int(os.getenv("RANK", -1))
-    
-    # Add synchronization point to ensure all processes have completed config parsing
-    if gpu_id != -1:
-        dist.barrier()
-        if gpu_id == 0:
-            print("All processes synchronized after config parsing")
-    
     if hasattr(config.trainer, "fsdp"):
         trainer = LMFSDPTrainer(config)
     else:
