@@ -3,9 +3,8 @@ import os
 import copy
 import numpy as np
 from tqdm import tqdm
-from transformers import LlamaTokenizer
+from transformers import LlamaTokenizer,LlamaTokenizerFast
 from sft_util import PROMPT_DICT, load_sft_dataset
-
 
 prefill_max_len_dict = {
     "narrativeqa_summary": {
@@ -31,12 +30,13 @@ prefill_max_len_dict = {
 }
 
 
-cache_dir = "/claire-rcp-scratch/shared/xwei/dataset/sft/"
+cache_dir = "/data8/zhangxin/ljc/RAT/datasets_tokenized/sft"
 
 
 def tokenize_answer_only(dataset, task, num_proc, max_length, split="train"):
     org_max_length = max_length
-    enc = LlamaTokenizer.from_pretrained("huggyllama/llama-7b")
+    # enc = LlamaTokenizer.from_pretrained("/data8/zhangxin/ljc/RAT/llama-7b-tokenizer")
+    enc = LlamaTokenizerFast.from_pretrained("/data8/zhangxin/ljc/RAT/llama-7b-tokenizer")
     if split == "test":
         max_length = prefill_max_len_dict.get(task).get(max_length)
     def tokenize_process(example):
@@ -75,6 +75,7 @@ def save_to_npmemmap(split, dset, path, max_length):
     filename = os.path.join(cache_dir, f"{path}.bin")
     arr_len = dset.num_rows
     dtype = np.int16  # (can do since enc.max_token_value == 32000 is < 2**16)
+    os.makedirs(os.path.dirname(filename), exist_ok=True) 
     arr = np.memmap(filename, dtype=dtype, mode="w+", shape=(arr_len, max_length))
     total_batches = 10
 

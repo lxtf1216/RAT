@@ -28,6 +28,7 @@ name2torchdtype = {
     "float16": torch.float16,
     "bfloat16": torch.bfloat16,
 }
+import time
 
 
 class WandbLog:
@@ -237,20 +238,37 @@ class Trainer:
             torch.cuda.synchronize()
             t0 = time.time()
             train_loss = 0.0
+            # timer
+            load_time = 0.0
+            to_device_time = 0.0 
+            fwd_time = 0.0
+            bwd_time = 0.0
             for micro_step in range(self.gradient_accumulation_steps):
                 try:
+                    start = time.perf_counter()
                     inputs, labels, *extra_args = next(trainloader_iter)
+                    end = time.perf_counter()
+                    load_time += end - start
                 except StopIteration:
                     trainloader_iter = iter(self.train_loader)
                     inputs, labels, *extra_args = next(trainloader_iter)
                 ctx_fn = self.task_wrapper.no_sync if micro_step < self.gradient_accumulation_steps - 1 else nullcontext
                 with ctx_fn():
+                    start = time.perf_counter()
                     inputs = inputs.to("cuda", non_blocking=True)
                     labels = labels.to("cuda", non_blocking=True)
+                    end = time.perf_counter()
+                    to_device_time += end - start
+                    start = time.perf_counter()
                     loss, _ = self.forward(inputs, labels)
+                    end = time.perf_counter()
+                    fwd_time += end - start
                     loss = loss / self.gradient_accumulation_steps
                     train_loss = train_loss + loss.item()
+                    start = time.perf_counter()
                     loss.backward()
+                    end = time.perf_counter()
+                    bwd_time += end - start
             # finish the step
             if self.gradient_clipping is not False:
                 torch.nn.utils.clip_grad_norm_(self.task.parameters(), self.gradient_clipping)
@@ -272,6 +290,10 @@ class Trainer:
                     "step": self.step,
                     "lr": self.optimizer.param_groups[0]["lr"],
                     "fwd+bwd": (t2 - t0),
+                    "load_time":load_time,
+                    "to_device_time":to_device_time,
+                    "fwd_time":fwd_time,
+                    "bwd_time":bwd_time
                     }
                 )
                 if self.gpu_id in [-1, 0]:

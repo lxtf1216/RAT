@@ -18,9 +18,10 @@ import src.model
 import src.task
 import src.optim
 import src.data  # to load all the things into registries
+import datetime
 
-# for registry in registries:
-#    registry._is_register = False
+for registry in registries:
+    registry._is_register = False
 
 
 @hydra.main(
@@ -35,6 +36,7 @@ def main(config):
         trainer = LMFSDPTrainer(config)
     else:
         trainer = LMTrainer(config)
+    torch.autograd.set_detect_anomaly(True)
     trainer.train()
     dist.barrier()
     print("Finish Training!")
@@ -58,6 +60,6 @@ if __name__ == "__main__":
     world_size = int(os.getenv("WORLD_SIZE", 1))
     local_rank = int(os.getenv("LOCAL_RANK", -1))
     torch.cuda.set_device(local_rank)
-    dist.init_process_group(backend="nccl", world_size=world_size, rank=gpu_id, init_method="env://")
+    dist.init_process_group(backend="nccl", world_size=world_size, rank=gpu_id, init_method="env://",timeout=datetime.timedelta(seconds=60))
     main()
     dist.destroy_process_group()

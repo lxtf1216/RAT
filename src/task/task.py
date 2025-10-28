@@ -17,6 +17,7 @@ from ..utils.registry import (
     metric_registry,
 )
 from ..model.base import Base
+import os
 
 
 @task_registry.register("base")
@@ -111,4 +112,7 @@ class LMTask(BaseTask):
 
     def nflops(self, bs, seq_len):
         return self.embedding.nflops(bs, seq_len) + self.backbone.nflops(bs, seq_len) + self.head.nflops(bs, seq_len)
+    
+    def tie_weights(self):
+        pass
 

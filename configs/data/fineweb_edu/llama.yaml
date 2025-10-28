@@ -3,11 +3,11 @@ seq_len: 4096
 ignore_input_index: 2
 num_bytes: 2
 vocab_size: 32000
-batch_size: 2
-global_batch_size: 512
+batch_size: 1
+global_batch_size: 32
 train:
-  _name_: lm_ordered
-  tokenized_file_path: "/home/xwei/fake_path/dataset/fineweb_edu_100B/llama-train.bin"
+  _name_: lm_random
+  tokenized_file_path: "/data8/zhangxin/ljc/RAT/datasets_tokenized/fineweb_edu_100B/llama-train.bin"
   batch_size: ${..batch_size}
   global_batch_size: ${..global_batch_size}
   seq_len: ${..seq_len}
@@ -16,8 +16,8 @@ train:
   limit_tokens: ${eval:"110*10**9"}
   ignore_input_index: ${..ignore_input_index}
 val:
-  _name_: lm_ordered
-  tokenized_file_path: "/home/xwei/fake_path/dataset/fineweb_edu_100B/llama-val.bin"
+  _name_: lm_random
+  tokenized_file_path: "/data8/zhangxin/ljc/RAT/datasets_tokenized/fineweb_edu_100B/llama-val.bin"
   batch_size: ${..batch_size}
   global_batch_size: ${..global_batch_size}
   seq_len: ${..seq_len}

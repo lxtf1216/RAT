@@ -4,7 +4,7 @@ from ..task.task import LMTask
 
 
 def convert_from_sequence_models(task: LMTask, pretrained_path):
-    ckpt = torch.load(pretrained_path, map_location="cuda")
+    ckpt = torch.load(pretrained_path, map_location="cuda:0")
     state_dict = ckpt['task']
     new_state_dict = {}
     for k, v in state_dict.items():

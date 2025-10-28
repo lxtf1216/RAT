@@ -14,7 +14,7 @@ defaults:
 
 data:
   _name_: narrativeqa
-  global_batch_size: 128
+  global_batch_size: 32
   seq_len: 4096
   train:
     limit_tokens: -1
@@ -58,4 +58,4 @@ trainer:
   log_interval: 20
   eval_when_log: true
   dtype: bfloat16
-  pretrained_path: /home/xwei/fake_path/sequence_model/pretrain_1B_100BT_fineweb/ratl${..model.backbone.seq_cell.chunk_size}.pth
+  pretrained_path: /data8/zhangxin/ljc/RAT/sequence_model/exp/ckpt/sft_narrativeqa_summary/narrativeqa_summary4096-lm-lmposinterrope10000-sequenced2048l24-ratl16-ffn-lm/1e-05_128_1/510.pth

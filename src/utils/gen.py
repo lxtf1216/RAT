@@ -2,7 +2,7 @@ import torch
 import math
 import copy
 from datasets import load_dataset
-from transformers import LlamaTokenizer
+from transformers import LlamaTokenizerFast
 import torch.nn.functional as F
 from ..model.backbone.cache import AttentionCache, LocalAttentionCache, RNNCache, RATCache
 
@@ -104,7 +104,7 @@ def generate_greedy_search(
     returns: [B, 1 + max_new_tokens]
     """
     if enc is None:
-        enc = LlamaTokenizer.from_pretrained("huggyllama/llama-7b", cache_dir=cache_dir)
+        enc = LlamaTokenizerFast.from_pretrained("/data8/zhangxin/ljc/RAT/llama-7b-tokenizer", cache_dir=cache_dir)
     if max_new_tokens == -1:
         max_new_tokens = max_new_tokens_dict.get(config.data._name_, 128)
     generated = []

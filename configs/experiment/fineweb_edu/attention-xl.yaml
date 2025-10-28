@@ -13,7 +13,7 @@ defaults:
   - _self_
 
 data:
-  global_batch_size: 512
+  global_batch_size: 16
 
 optim:
   optimizer:

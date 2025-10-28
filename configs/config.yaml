@@ -2,7 +2,7 @@ defaults:
   - _self_
   - experiment: refinedweb/s
 
-base_dir: /home/xwei/fake_path/sequence_model
+base_dir: /home/zhangxin/ljc/RAT/sequence_model
 wandb:
   entity: xiuying-wei
   project: sequence_model
@@ -11,7 +11,7 @@ wandb:
   anonymous: allow
   dir: ${base_dir}
 
-wandb_use: true
+wandb_use: false
 
 hydra:
   run:

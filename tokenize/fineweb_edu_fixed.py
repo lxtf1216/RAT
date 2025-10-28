@@ -1,4 +1,4 @@
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from transformers import AutoTokenizer
 from argparse import ArgumentParser
 import os
@@ -7,18 +7,17 @@ from tqdm import tqdm
 from transformers import LlamaTokenizer
 
 
-# long_path = "/capstor/store/cscs/swissai/a06/datasets_raw/fineweb-edu-sample-100BT/sample/100BT/"
-# cache_dir = "/capstor/store/cscs/swissai/a10/datasets_tokenized/fineweb_edu_100B/llama_files/"
-
-long_path = "/data8/zhangxin/.cache/huggingface/datasets/HuggingFaceFW___fineweb-edu/sample-100BT/0.0.0/87f09149ef4734204d70ed1d046ddc9ca3f2b8f9"
-cache_dir = "/data8/zhangxin/.cache/huggingface/datasets_tokenized/fineweb_edu_100B/llama_files/"
+# 修正缓存目录路径
+cache_dir = "/data8/zhangxin/datasets_tokenized/fineweb_edu_100B/llama_files/"
 
 def tokenize(tokenizer, num_proc, dataset):
+    """保证和原来的数据处理方式一样，添加了截断但是实际没有截断"""
     if tokenizer == "llama":
         enc = LlamaTokenizer.from_pretrained("/data8/zhangxin/ljc/RAT/llama-7b-tokenizer")
         eos_tokens = enc("</s>", truncation=False, padding=False, add_special_tokens=False)["input_ids"]
         def tokenize_process(example):
-            ids = enc(example["text"], truncation=False, padding=False, add_special_tokens=False)["input_ids"]
+            # 添加截断处理以解决序列长度问题
+            ids = enc(example["text"], truncation=True, max_length=2048, padding=False, add_special_tokens=False)["input_ids"]
             ids = ids + eos_tokens
             out = {'ids': ids, 'len': len(ids)}
             return out
@@ -37,6 +36,9 @@ def tokenize(tokenizer, num_proc, dataset):
 
 def save_to_npmemmap(split, dset, tokenizer, path):
     print(split)
+    # 确保目录存在
+    os.makedirs(cache_dir, exist_ok=True)
+    
     filename = os.path.join(cache_dir, f"{path}.bin")
     dtype = np.uint16  # (can do since enc.max_token_value == 32000 is < 2**16)
     arr_len = np.sum(dset['len'], dtype=np.uint64)
@@ -63,12 +65,35 @@ def parse_args():
 
 def main(args):
     print(args.num_proc)
+    
+    # 首先加载完整数据集
+    print("加载完整数据集...")
+    try:
+        dataset = load_dataset("HuggingFaceFW/fineweb-edu", 
+                          name="sample-100BT", 
+                          split="train",
+                          cache_dir="/data8/zhangxin/.cache/huggingface/datasets")
+    except Exception as e:
+        print(f"加载数据集失败: {e}")
+        return
+    
+    print(f"数据集大小: {len(dataset)}")
+    
+    # 按照原始逻辑分块处理
     new_dataset = []
     for i in range(14):
         for j in range(10):
             str_name = f"0{i}_0000{j}" if i >= 10 else f"00{i}_0000{j}"
-            fineweb_chunk = load_dataset(path=long_path, split="train", data_files=f"{str_name}.parquet")
+            
+            # 计算当前分片的索引范围
+            total_shards = 140  # 14 * 10
+            shard_index = i * 10 + j
+            
+            # 从完整数据集中获取分片
+            fineweb_chunk = dataset.shard(num_shards=total_shards, index=shard_index)
+            print(f"处理分片 {str_name}, 大小: {len(fineweb_chunk)}")
             print("begin to tokenize!")
+            
             new_dataset = tokenize(args.tokenizer, args.num_proc, fineweb_chunk)
             new_dataset = new_dataset.train_test_split(test_size=0.005, seed=1005, shuffle=True)
 
@@ -88,7 +113,8 @@ def aggregate_files(split):
             arr = np.memmap(filename, dtype=dtype, mode="r")
             num_tokens += len(arr)
     print(num_tokens)
-    new_path = "/data8/zhangxin/.cache/huggingface/datasets_tokenized/fineweb_edu_100B"
+    new_path = "/data8/zhangxin/datasets_tokenized/fineweb_edu_100B"
+    os.makedirs(new_path, exist_ok=True)
     new_file = os.path.join(new_path, f"llama-{split}.bin")
     new_arr = np.memmap(new_file, dtype=dtype, mode="w+", shape=(num_tokens, ))
 
@@ -106,6 +132,10 @@ def aggregate_files(split):
 
 
 if __name__ == "__main__":
-    main(parse_args())
-    #aggregate_files("train")
-    #aggregate_files("val")
+    args = parse_args()
+    main(args)
+    
+    # 可选：聚合文件
+    print("\n开始聚合文件...")
+    aggregate_files("train")
+    aggregate_files("val")

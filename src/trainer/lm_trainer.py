@@ -64,7 +64,8 @@ class LMTrainer(trainer.Trainer):
         cache = gen_util.get_cache(self.config)
         # generate sample one by one
         with open(os.path.join(self.save_dir, f"{self.config.data._name_}_rank{self.gpu_id}.jsonl"), "w", encoding="utf-8") as f:
-            test_data_path = os.path.join(os.path.dirname(self.config.data.val.tokenized_input_path), f"llama-validation-{self.config.data.seq_len}-inputs.bin")
+            # test_data_path = os.path.join(os.path.dirname(self.config.data.val.tokenized_input_path), f"llama-validation-{self.config.data.seq_len}-inputs.bin")
+            test_data_path = os.path.join(os.path.dirname(self.config.data.val.tokenized_input_path), f"llama-test-{self.config.data.seq_len}-inputs.bin")
             test_data = np.memmap(test_data_path, mode="r", dtype=np.int16)
             nsamples = len(test_data) // self.config.data.seq_len
             nsamples_per_gpu = nsamples // self.ngpus

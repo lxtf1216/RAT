@@ -4,6 +4,8 @@ import torch
 import json
 import sys
 import os
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.append(project_root)
 import numpy as np
 import random
 import argparse
@@ -11,24 +13,25 @@ from tqdm import tqdm
 from easydict import EasyDict
 from datasets import load_dataset
 from omegaconf import OmegaConf
-from transformers import LlamaTokenizer
+from transformers import LlamaTokenizerFast
 import hydra
-from config.config import dataset2maxlen_dict, dataset2prompt_dict, datasettype_dict
-model_root = "/home/xwei/transformers/sequence_models/"
+# from config import dataset2maxlen_dict, dataset2prompt_dict, datasettype_dict
+model_root = "/data8/zhangxin/rat/fineweb_llama4096-lm-lmposinterrope10000-sequenced2048l24-ratl16-ffn-lm/"
 sys.path.insert(0, model_root)
 import src.utils.config as util_config
 from src.utils.registry import task_registry
 from src.utils import convert_load_ckpt
 from src.utils import gen as gen_util
 from src.model.backbone.cache import LocalAttentionCache
-
+from config import dataset2maxlen_dict, dataset2prompt_dict, datasettype_dict
 
 def load_model_from_hydra_config(hydra_overrides):
     OmegaConf.register_new_resolver("eval", eval)
     OmegaConf.register_new_resolver("int", int)
-    with hydra.initialize(config_path="../../../sequence_models/configs/", version_base=None):
+    #with hydra.initialize(config_path="../../../sequence_models/configs/", version_base=None):
+    with hydra.initialize(config_path="../../configs/"):
         config = hydra.compose(
-            config_name="config",
+            config_name="experiment/fineweb_edu/rat-xl",
             overrides=[x for x in hydra_overrides.split(',')]
         )
     config = EasyDict(OmegaConf.to_container(config, resolve=True, throw_on_missing=True))
@@ -118,14 +121,17 @@ if __name__ == '__main__':
     seed_everything(42)
     # build model
     model = ModelWrapper(args.hydra_overrides)
-    enc = LlamaTokenizer.from_pretrained("huggyllama/llama-7b")
-    save_dir = "pred_wxy"
+    enc = LlamaTokenizerFast.from_pretrained("/data8/zhangxin/ljc/RAT/llama-7b-tokenizer")
+    # save_dir = "pred_wxy"
+    save_dir = "pred_wxy/sft"
     datasets = []
     datasets = datasettype_dict.get(args.data_type)
     # for i in range(1, 6):
     #     datasets = datasets + datasettype_dict.get(i)
     for dataset in datasets:
-        data = load_dataset('THUDM/LongBench', dataset, split='test')
+        datafile = f"/data8/zhangxin/ljc/RAT/datasets/LongBench/data/{dataset}.jsonl"
+        data = load_dataset('json', data_files=datafile, split='train')
+        #data = load_dataset('THUDM/LongBench', dataset, split='test',trust_remote_code=True)
         if not os.path.exists(f"{save_dir}/{args.model_name}/"):
             os.makedirs(f"{save_dir}/{args.model_name}")
         out_path = f"{save_dir}/{args.model_name}/{dataset}.jsonl"

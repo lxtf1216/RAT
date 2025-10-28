@@ -4,7 +4,8 @@ import json
 import argparse
 import numpy as np
 from datasets import load_dataset
-from config.config import postprocess_dict
+# from config.config import postprocess_dict
+from config import postprocess_dict
 from metrics import (
     qa_f1_score,
     rouge_zh_score,
@@ -76,7 +77,9 @@ if __name__ == '__main__':
         if dataset != args.dataset and args.dataset is not None:
             continue
         if dataset == "trec":
-            orig_dataset = load_dataset('THUDM/LongBench', dataset, split='test')
+            # orig_dataset = load_dataset('THUDM/LongBench', dataset, split='test')
+            # datafile = f"/data8/zhangxin/ljc/RAT/datasets/LongBench/data/{dataset}.jsonl"
+            orig_dataset = load_dataset('json', data_files=f"/data8/zhangxin/ljc/RAT/datasets/LongBench/data/{dataset}.jsonl", split='train')
             classes = list(orig_dataset["all_classes"])
         else:
             classes = None

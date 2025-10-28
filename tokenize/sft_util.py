@@ -5,7 +5,7 @@ import json
 from collections import defaultdict
 
 
-cache_dir = "/claire-rcp-scratch/shared/xwei/dataset/sft/downloads"
+cache_dir = "/data8/zhangxin/ljc/RAT/datasets_tokenized/sft/downloads"
 
 
 PROMPT_DICT = {
